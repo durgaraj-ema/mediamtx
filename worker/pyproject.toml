@@ -1,0 +1,13 @@
+[project]
+name = "vi-live-worker-fallback"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "opencv-python-headless==4.10.0.84",
+    "redis==5.0.8",
+    "httpx==0.27.2",
+    "numpy==1.26.4",
+]
+
+[tool.uv]
+package = false

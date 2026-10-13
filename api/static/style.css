@@ -1,0 +1,95 @@
+:root {
+  color-scheme: light dark;
+  --bg: #0f1115;
+  --panel: #171a21;
+  --border: #2a2e37;
+  --text: #e6e8eb;
+  --muted: #8b92a0;
+  --accent: #4f8cff;
+  --ok: #3ecf8e;
+  --warn: #f5a623;
+  --bad: #ef5468;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+header h1 { font-size: 18px; margin: 0; }
+header span { color: var(--muted); font-size: 13px; }
+
+main {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 16px;
+  padding: 20px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.panel h2 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 500; }
+
+.badge { padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+.badge.online { background: rgba(62,207,142,0.15); color: var(--ok); }
+.badge.offline { background: rgba(239,84,104,0.15); color: var(--bad); }
+.badge.unknown { background: rgba(139,146,160,0.15); color: var(--muted); }
+.badge.pending { background: rgba(245,166,35,0.15); color: var(--warn); }
+.badge.confirmed { background: rgba(62,207,142,0.15); color: var(--ok); }
+.badge.rejected { background: rgba(139,146,160,0.15); color: var(--muted); }
+.badge.unavailable { background: rgba(239,84,104,0.15); color: var(--bad); }
+
+form { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+form .row { display: flex; gap: 8px; }
+input, button {
+  background: #0d0f14;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+}
+input { flex: 1; }
+button {
+  background: var(--accent);
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+button:hover { opacity: 0.9; }
+button.ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 400; }
+
+.link { color: var(--accent); cursor: pointer; text-decoration: underline; }
+
+video { width: 100%; border-radius: 8px; background: black; aspect-ratio: 16/9; }
+
+.full { grid-column: 1 / -1; }
+.muted { color: var(--muted); font-size: 12px; }

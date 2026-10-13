@@ -1,0 +1,15 @@
+[project]
+name = "vi-live-worker-deepstream"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx==0.27.2",
+    "redis==5.0.8",
+]
+
+# `gi` (PyGObject) and `pyds` are NOT listed here — they ship inside the
+# DeepStream SDK base image's system Python and are not installable via pip.
+# This pyproject is installed with `uv pip install --system` against that
+# same system interpreter (no isolated venv) so those bindings stay reachable.
+[tool.uv]
+package = false

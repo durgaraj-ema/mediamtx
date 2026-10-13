@@ -1,0 +1,132 @@
+x-common-env: &common-env
+  DATABASE_URL: postgresql+psycopg2://vi:vi@postgres:5432/vi
+  REDIS_URL: redis://redis:6379/0
+  MEDIAMTX_API_URL: http://mediamtx:9997
+  MEDIAMTX_RTSP_URL: rtsp://mediamtx:8554
+  MEDIAMTX_HLS_URL: http://localhost:8888
+  VI_ENABLE_LIVE: "true"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vi
+      POSTGRES_PASSWORD: vi
+      POSTGRES_DB: vi
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    ports:
+      - "8554:8554"   # RTSP
+      - "8888:8888"   # HLS
+      - "8889:8889"   # WebRTC
+      - "9997:9997"   # control API
+    volumes:
+      - ./mediamtx/mediamtx.yml:/mediamtx.yml:ro
+      - recordings:/recordings
+
+  # Synthetic "camera" so the whole pipeline is demoable without real RTSP cameras.
+  # Publishes a generated test pattern into MediaMTX as if it were camera RTSP output.
+  testsource:
+    image: jrottenberg/ffmpeg:4.4-alpine
+    depends_on:
+      - mediamtx
+    entrypoint: ["sh", "-c"]
+    command:
+      - >
+        sleep 5 &&
+        ffmpeg -re -f lavfi -i "testsrc=size=640x480:rate=15,drawbox=x=0:y=0:w=iw:h=ih:color=black@0.0"
+        -vf "format=yuv420p"
+        -c:v libx264 -preset ultrafast -tune zerolatency -g 30
+        -f rtsp rtsp://mediamtx:8554/demo/cam-1
+    restart: unless-stopped
+
+  api:
+    build: ./api
+    environment:
+      <<: *common-env
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mediamtx:
+        condition: service_started
+    volumes:
+      - recordings:/recordings:ro
+
+  # CPU fallback analytics profile (§25.13): OpenCV motion detector. Always on
+  # by default so the POC is demoable without an NVIDIA GPU + DeepStream SDK.
+  worker-fallback:
+    build: ./worker
+    environment:
+      <<: *common-env
+      API_URL: http://api:8000
+      WORKER_CAPACITY: "50"   # max cameras this worker instance will claim
+      POLL_INTERVAL_SECONDS: "5"
+    depends_on:
+      - api
+    deploy:
+      replicas: 2   # scale horizontally: `docker compose up --scale worker-fallback=N`
+
+  # Default NVIDIA GPU analytics profile (§25.1/§25.4): real DeepStream pipeline
+  # (NVDEC decode -> nvstreammux batch -> nvinfer/TensorRT -> nvtracker ->
+  # nvdsanalytics -> event emission). Opt-in because it needs an NVIDIA GPU,
+  # the DeepStream SDK base image, and real TensorRT engines/configs — none
+  # of which exist on this dev machine. Run with: `docker compose --profile gpu up`
+  worker-deepstream:
+    build: ./worker-deepstream
+    profiles: ["gpu"]
+    environment:
+      <<: *common-env
+      API_URL: http://api:8000
+      WORKER_CAPACITY: "200"
+      POLL_INTERVAL_SECONDS: "5"
+      DS_INFER_CONFIG: /app/config/pgie_config.txt
+      DS_TRACKER_CONFIG: /app/config/tracker_config.yml
+      DS_ANALYTICS_CONFIG: /app/config/nvdsanalytics_config.txt
+      DS_MUX_BATCH_SIZE: "30"
+      DS_MUX_WIDTH: "1280"
+      DS_MUX_HEIGHT: "720"
+      # Mitigations for the DS 9.1 release-note memory-growth report on
+      # dynamic add/remove under Ubuntu 24 — confirm exact values in the P7008
+      # soak test before relying on them in production.
+      G_SLICE: always-malloc
+      MALLOC_TRIM_THRESHOLD_: "-1"
+    depends_on:
+      - api
+    deploy:
+      replicas: 1
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: ["gpu"]
+    volumes:
+      - ./worker-deepstream/models:/app/models:ro
+
+volumes:
+  pgdata:
+  recordings:

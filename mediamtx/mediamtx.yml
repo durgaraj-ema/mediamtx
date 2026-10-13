@@ -1,0 +1,27 @@
+# Minimal static MediaMTX config.
+# Cameras/paths are NOT declared here — the api service registers/removes them
+# at runtime via the MediaMTX control API (POST/DELETE /v3/config/paths/*),
+# so adding camera #1001 never touches this file or restarts the process.
+
+logLevel: info
+
+api: yes
+apiAddress: :9997
+
+rtsp: yes
+rtspAddress: :8554
+protocols: [tcp]
+
+rtmp: no
+
+hls: yes
+hlsAddress: :8888
+hlsAllowOrigin: '*'
+hlsVariant: lowLatency
+
+webrtc: yes
+webrtcAddress: :8889
+webrtcAllowOrigin: '*'
+
+# Paths are added/removed dynamically. This placeholder keeps the key present.
+paths: {}

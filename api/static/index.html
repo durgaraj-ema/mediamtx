@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VI Live Camera POC</title>
+<link rel="stylesheet" href="/static/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>Live Camera Ingest — POC</h1>
+  <span>MediaMTX → analytics workers → events. Dynamic registry, horizontally-scalable workers.</span>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Add camera</h2>
+    <form id="camera-form">
+      <div class="row">
+        <input id="f-name" placeholder="Name (e.g. Lobby Cam)" required />
+        <input id="f-site" placeholder="Site (e.g. HQ)" value="default" />
+      </div>
+      <input id="f-url" placeholder="RTSP URL (rtsp://user:pass@host:554/stream)" required />
+      <div class="row">
+        <button type="submit">Add camera</button>
+        <button type="button" class="ghost" id="use-demo">Use demo test-pattern camera</button>
+      </div>
+    </form>
+
+    <h2>Cameras</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Site</th><th>Status</th><th>Worker</th><th>Live</th><th></th></tr></thead>
+      <tbody id="camera-rows"></tbody>
+    </table>
+    <p class="muted" id="camera-empty">No cameras yet — add one above.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Live view</h2>
+    <video id="player" controls autoplay muted></video>
+    <p class="muted" id="player-label">Select a camera to preview.</p>
+  </section>
+
+  <section class="panel full">
+    <h2>Events</h2>
+    <table>
+      <thead><tr><th>Time</th><th>Camera</th><th>Type</th><th>Objects</th><th>Verification</th></tr></thead>
+      <tbody id="event-rows"></tbody>
+    </table>
+  </section>
+
+  <section class="panel full">
+    <h2>Worker shard distribution (horizontal scaling proof)</h2>
+    <table>
+      <thead><tr><th>Worker</th><th>Camera count</th><th>Camera IDs</th></tr></thead>
+      <tbody id="worker-rows"></tbody>
+    </table>
+    <p class="muted">Scale with: <code>docker compose up --scale worker=N</code>. Cameras rebalance automatically via Redis leases — no restarts, no static shard config.</p>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
