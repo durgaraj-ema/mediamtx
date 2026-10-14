@@ -16,7 +16,7 @@ def add_path(path_name: str, rtsp_source_url: str) -> None:
         "source": rtsp_source_url,
         "sourceOnDemand": False,
         "record": True,
-        "recordPath": f"/recordings/{path_name}/%Y-%m-%d_%H-%M-%S-%f",
+        "recordPath": "/recordings/%path/%Y-%m-%d_%H-%M-%S-%f",
         "recordFormat": "fmp4",
         "recordSegmentDuration": "60s",
     }

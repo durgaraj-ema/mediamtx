@@ -98,7 +98,15 @@ def create_camera(payload: CameraCreate, db: Session = Depends(get_db)):
 @app.get("/api/live/cameras", response_model=list[CameraOut])
 def list_cameras(db: Session = Depends(get_db)):
     cams = db.query(Camera).order_by(Camera.created_at.desc()).all()
-    return [_camera_out(c, db) for c in cams]
+    # Refresh liveness from MediaMTX so the UI (which only polls
+    # this list) never shows a stale "unknown" status.
+    for cam in cams:
+        live = mediamtx_client.path_status(cam.path_name)
+        if live is not None:
+            cam.status = "online" if live.get("ready") else "offline"
+            cam.last_seen_at = datetime.utcnow()
+    db.commit()
+    return [_camera_out(cam, db) for cam in cams]
 
 
 @app.get("/api/live/cameras/{camera_id}/status", response_model=CameraOut)

@@ -5,23 +5,48 @@
 
 logLevel: info
 
+# MediaMTX >= 1.12 restricts the control API ("api" action) to
+# localhost by default. The api service registers camera paths from
+# its own container IP, so the api action must be allowed for the
+# docker network. This POC runs without auth/RBAC by design
+# (see README "Known POC shortcuts").
+authMethod: internal
+authInternalUsers:
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: publish
+        path:
+      - action: read
+        path:
+      - action: playback
+        path:
+      - action: api
+      - action: metrics
+      - action: pprof
+
 api: yes
 apiAddress: :9997
 
 rtsp: yes
 rtspAddress: :8554
-protocols: [tcp]
+rtspTransports: [tcp]
 
 rtmp: no
 
 hls: yes
 hlsAddress: :8888
-hlsAllowOrigin: '*'
+hlsAllowOrigins: ['*']
 hlsVariant: lowLatency
 
 webrtc: yes
 webrtcAddress: :8889
-webrtcAllowOrigin: '*'
+webrtcAllowOrigins: ['*']
 
-# Paths are added/removed dynamically. This placeholder keeps the key present.
-paths: {}
+# Paths are added/removed dynamically. The one static entry is the
+# synthetic demo camera: the `testsource` service publishes its test
+# pattern here, and the api registers cam/<id> paths that pull from it.
+paths:
+  demo/cam-1:
+    source: publisher
