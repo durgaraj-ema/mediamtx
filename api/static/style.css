@@ -30,6 +30,9 @@ header {
 
 header h1 { font-size: 18px; margin: 0; }
 header span { color: var(--muted); font-size: 13px; }
+header .nav { margin-left: auto; }
+header .nav a { color: var(--accent); text-decoration: none; }
+header .nav a:hover { text-decoration: underline; }
 
 main {
   display: grid;

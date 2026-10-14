@@ -48,10 +48,17 @@ class CameraDetector:
     def stop(self):
         self._stop = True
 
+    def _capture_url(self, url: str) -> str:
+        # Force a short connect timeout and TCP so an unreachable / offline
+        # path fails fast instead of letting FFmpeg spin on RTSP retries
+        # (which can wedge the worker when cameras are added/removed).
+        sep = "&" if "?" in url else "?"
+        return f"{url}{sep}rtsp_transport=tcp&timeout=2500000"
+
     def run(self):
         backoff = 1
         while not self._stop:
-            cap = cv2.VideoCapture(self.restream_url)
+            cap = cv2.VideoCapture(self._capture_url(self.restream_url))
             if not cap.isOpened():
                 self.on_status(self.camera_id, "offline")
                 time.sleep(min(backoff, 15))

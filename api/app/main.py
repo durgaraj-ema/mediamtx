@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from . import mediamtx_client
-from .crypto import encrypt
+from .crypto import decrypt, encrypt
 from .db import Base, SessionLocal, engine, get_db
 from .janitor import start_background as start_janitor
 from .models import Camera, CameraAssignment, LiveEvent, RecordingSegment
@@ -30,6 +30,21 @@ app = FastAPI(title="VI Live Camera Control Plane (POC)")
 def on_startup():
     Base.metadata.create_all(bind=engine)
     start_janitor()
+    _restore_paths()
+
+
+def _restore_paths():
+    """MediaMTX holds dynamic paths in memory, so a mediamtx restart wipes
+    every camera path. Re-create them from the registry on API startup."""
+    db = SessionLocal()
+    try:
+        for cam in db.query(Camera).filter_by(enabled=True).all():
+            try:
+                mediamtx_client.add_path(cam.path_name, decrypt(cam.rtsp_url_enc))
+            except Exception as e:
+                print(f"restore path {cam.path_name}: {e}")
+    finally:
+        db.close()
 
 
 def _camera_out(cam: Camera, db: Session) -> CameraOut:
@@ -99,12 +114,14 @@ def create_camera(payload: CameraCreate, db: Session = Depends(get_db)):
 def list_cameras(db: Session = Depends(get_db)):
     cams = db.query(Camera).order_by(Camera.created_at.desc()).all()
     # Refresh liveness from MediaMTX so the UI (which only polls
-    # this list) never shows a stale "unknown" status.
+    # this list) never shows a stale "online" status.
     for cam in cams:
         live = mediamtx_client.path_status(cam.path_name)
         if live is not None:
             cam.status = "online" if live.get("ready") else "offline"
             cam.last_seen_at = datetime.utcnow()
+        else:
+            cam.status = "offline"
     db.commit()
     return [_camera_out(cam, db) for cam in cams]
 
@@ -115,10 +132,12 @@ def camera_status(camera_id: str, db: Session = Depends(get_db)):
     if not cam:
         raise HTTPException(404, "camera not found")
     live = mediamtx_client.path_status(cam.path_name)
-    if live:
+    if live is not None:
         cam.status = "online" if live.get("ready") else "offline"
         cam.last_seen_at = datetime.utcnow()
-        db.commit()
+    else:
+        cam.status = "offline"
+    db.commit()
     return _camera_out(cam, db)
 
 
@@ -284,6 +303,11 @@ def list_workers(db: Session = Depends(get_db)):
 # ----------------------------------------------------------------- UI --
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/grid")
+def grid():
+    return FileResponse("static/grid.html")
 
 
 @app.get("/")

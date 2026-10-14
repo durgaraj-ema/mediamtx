@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VI Live Camera POC — Grid</title>
+<link rel="stylesheet" href="/static/style.css" />
+<link rel="stylesheet" href="/static/grid.css" />
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+</head>
+<body>
+<header>
+  <h1><a href="/">&larr; VI Live Camera POC</a></h1>
+  <span class="muted">Grid view — every live stream plays simultaneously. Click any tile for full-screen.</span>
+</header>
+
+<main class="grid-page">
+  <div id="grid" class="grid"></div>
+  <p class="muted" id="grid-empty">No online cameras yet. Add one from the dashboard.</p>
+</main>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+    <button class="modal-fs" id="modal-fs" aria-label="Fullscreen">⛶</button>
+    <video id="modal-player" controls autoplay muted playsinline></video>
+    <p class="muted" id="modal-label"></p>
+  </div>
+</div>
+
+<script src="/static/grid.js"></script>
+</body>
+</html>
